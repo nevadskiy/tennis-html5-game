@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>canvas html 5</title>
+	<style type="text/css">
+	body {
+		background-color: #fff;
+		overflow: hidden;
+	}
+	canvas {border: 1px solid grey;}
+	</style>
+</head>
+<body>
+<script type="text/javascript">
+	
+	var WIDTH = 640, HEIGHT = 480;
+	var canvas, context;
+	var keyState, UP = 38, DOWN = 40, W = 87, S = 83;
+	var player, ai, ball;
+	
+	player = {
+		x: null,
+		y: null,
+		score: 0,
+		width: 20,
+		height: 100,
+		
+		update: function() {
+			if (keyState[W]) {this.y -= 7;}
+			if (keyState[S]) {this.y += 7;}
+		},
+		
+		draw: function() {
+			context.fillRect(this.x, this.y, this.width, this.height);
+		}
+	}
+	
+	player2 = {
+		x: null,
+		y: null,
+		score: 0,
+		width: 20,
+		height: 100,
+		
+		update: function() {
+			if (keyState[UP]) {this.y -= 7;}
+			if (keyState[DOWN]) {this.y += 7;}
+		},
+		
+		draw: function() {
+			context.fillRect(this.x, this.y, this.width, this.height);
+		}
+	}
+	
+	ball = {
+		x: null,
+		y: null,
+		side: 20,
+		velocity: null,
+		speed: 12,
+		
+		getRandomDir: function() {
+			return Math.floor(Math.random()*2) * 2 - 1;
+		},
+		
+		init: function() {
+		
+			ball.x = (WIDTH - ball.side)/2;
+			ball.y = (HEIGHT - ball.side)/2;
+			ball.velocity = {
+				x: ball.speed * ball.getRandomDir(),
+				y: 0
+			}
+		},
+		
+		update: function() {
+			this.x += this.velocity.x;
+			this.y += this.velocity.y;
+			
+			if (0 > this.y || this.y + this.side > HEIGHT) {
+			
+				var offset;
+				if (this.velocity.y < 0) {
+					offset = 0 - this.y;
+				} else {
+					offset = HEIGHT - (this.y + this.side);
+				}
+				
+				this.velocity.y *= -1;
+			}
+			
+			if (this.x - this.side > WIDTH) {
+				player2.score += 1;
+				ball.init();
+			}
+			if (this.x < 0) {
+				player.score += 1;
+				ball.init();
+			}
+			
+			
+			var AABBIntersection = function(ax, ay, aw, ah, bx, by, bw, bh) {
+				return ax < bx + bw && ay < by + bh && bx < ax + aw && by < ay + ah;
+			}
+			var pdle;
+			
+			if (this.velocity.x  < 0) {
+				pdle = player;
+			} else {
+				pdle = player2;
+			}
+			if (AABBIntersection(pdle.x, pdle.y, pdle.width, pdle.height, 
+				this.x, this.y, this.side, this.side)) {
+				
+				if (pdle === player) { 
+					this.x = player.x + player.width;
+				}	else {
+					this.x = player2.x - this.side;
+				}
+				
+				var n = (this.y + this.side - pdle.y)/(pdle.height + this.side);
+				var phi = 0.25*Math.PI*(2*n - 1);
+				
+				var direction;
+				if (pdle === player) { direction = 1;} else {direction = -1}
+				this.velocity.x = direction*this.speed*Math.cos(phi);
+				this.velocity.y = this.speed*Math.sin(phi);
+			}
+		},
+		
+		draw: function() {
+			context.fillRect(this.x, this.y, this.side, this.side);
+		}
+	}
+	
+	function main() {
+		canvas = document.createElement('canvas');
+		context = canvas.getContext('2d');
+		document.body.appendChild(canvas);
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
+		
+		keyState = [];
+		document.addEventListener('keydown', function(e) {
+			keyState[e.keyCode] = true;
+		} );
+		document.addEventListener('keyup', function(e) {
+			delete keyState[e.keyCode];
+		} );
+		
+		
+		init();
+	}
+	function score() {
+	
+		context.save()
+		
+		context.font = "88px Arial";
+		context.fillStyle = "grey";
+		context.textAlign = "center"; 
+		context.textBaseline = "middle"; 
+		context.fillText(player.score + '  :  ' + player2.score, canvas.width/2, canvas.height/2); 
+		
+		context.restore();
+	}
+	
+	
+	function init() {
+		player.x = player.width;
+		player.y = (HEIGHT - player.height)/2;
+		
+		player2.x = WIDTH - (player.width + player2.width);
+		player2.y = (HEIGHT - player2.height)/2;
+		
+		ball.init();
+		
+		loop();
+	}
+	
+	function loop() {
+		update();
+		draw();
+		requestAnimationFrame(loop);
+	}
+	
+	function update() {
+		player.update();
+		player2.update();
+		ball.update();
+	}
+	
+	function draw() {
+			
+		context.clearRect(0, 0, WIDTH, HEIGHT);
+		
+		
+		score();
+		
+		player.draw();
+		player2.draw();
+		ball.draw();
+	}
+	
+	main();
+	
+</script>
+</body>
+</html>
